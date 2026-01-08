@@ -2,41 +2,44 @@
 <html lang="zh-Hant">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>數字金字塔疊疊樂 - 互動版</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>數字金字塔疊疊樂 - 平板優化版</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
+        /* 徹底禁止手機平板的預設行為 */
         * {
-            -webkit-touch-callout: none; /* 禁用長按選單 */
-            -webkit-user-select: none;   /* 禁用文字選取 */
+            -webkit-touch-callout: none;
+            -webkit-user-select: none;
             user-select: none;
+            touch-action: none; /* 全局禁止觸控滾動 */
         }
-        body {
-            background: radial-gradient(circle, #0f172a 0%, #020617 100%);
-            /* 關鍵：禁用瀏覽器所有預設觸控行為（如滾動、縮放） */
-            touch-action: none; 
-            overflow: hidden;
-            color: white;
-            position: fixed; /* 防止橡皮筋回彈效果 */
+        html, body {
+            margin: 0;
+            padding: 0;
             width: 100%;
             height: 100%;
+            overflow: hidden;
+            position: fixed; /* 防止橡皮筋回彈 */
+            background: radial-gradient(circle, #0f172a 0%, #020617 100%);
+            color: white;
         }
         canvas {
-            cursor: crosshair;
             display: block;
-            touch-action: none; /* 確保畫布不觸發滾動 */
+            touch-action: none;
+            -webkit-tap-highlight-color: transparent;
         }
         .ui-panel {
             background: rgba(255, 255, 255, 0.1);
             backdrop-filter: blur(12px);
             border: 1px solid rgba(255, 255, 255, 0.2);
+            pointer-events: auto; /* 確保 UI 可以點擊 */
         }
     </style>
 </head>
-<body class="flex flex-col items-center justify-center h-screen font-sans">
+<body class="flex flex-col items-center justify-center font-sans">
 
     <!-- 頂部資訊介面 -->
-    <div id="ui-container" class="absolute top-6 left-6 z-10 ui-panel p-5 rounded-2xl shadow-2xl min-w-[280px]">
+    <div id="ui-container" class="absolute top-6 left-6 z-20 ui-panel p-5 rounded-2xl shadow-2xl min-w-[280px]">
         <div class="flex justify-between items-start mb-4">
             <div>
                 <h1 class="text-xl font-bold text-white leading-tight">數字金字塔 🧱</h1>
@@ -52,10 +55,6 @@
                 <div class="text-[10px] text-blue-400 font-bold uppercase tracking-wider mb-1">規則</div>
                 <div class="text-sm text-gray-200">上方數值 = 下方兩塊之和</div>
             </div>
-            <div id="hint-box" class="p-3 bg-yellow-500/10 rounded-xl border border-yellow-400/20">
-                <div class="text-[10px] text-yellow-400 font-bold uppercase tracking-wider mb-1">目標</div>
-                <div id="targetText" class="text-md font-bold text-white">建立一個完整結構的金字塔</div>
-            </div>
         </div>
 
         <button id="resetBtn" class="mt-4 px-4 py-2 bg-red-500/20 hover:bg-red-500/40 text-red-200 border border-red-500/30 rounded-lg transition-colors font-bold w-full text-sm">
@@ -64,20 +63,20 @@
     </div>
 
     <!-- 成功提示 -->
-    <div id="successMessage" class="hidden absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-20 text-center pointer-events-none">
-        <div class="text-7xl font-black text-yellow-400 drop-shadow-[0_0_30px_rgba(250,204,21,0.6)] animate-bounce text-stroke-black">答對了！🎆</div>
+    <div id="successMessage" class="hidden absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-30 text-center pointer-events-none">
+        <div class="text-7xl font-black text-yellow-400 drop-shadow-[0_0_30px_rgba(250,204,21,0.6)] animate-bounce">答對了！🎆</div>
     </div>
 
     <!-- 底部控制按鈕 -->
-    <div class="absolute bottom-10 flex flex-col items-center gap-4 z-10 w-full">
+    <div class="absolute bottom-10 flex flex-col items-center gap-4 z-20 w-full">
         <div class="text-xs font-bold text-blue-300 bg-blue-900/40 px-4 py-1 rounded-full border border-blue-400/20">點擊數字後向上拉動</div>
-        <div class="flex gap-4 bg-black/40 p-5 rounded-[2.5rem] backdrop-blur-2xl border border-white/10 shadow-2xl">
-            <button onclick="spawnBlock(1, event)" class="w-14 h-14 bg-blue-500 border-b-4 border-blue-700 rounded-2xl shadow-lg flex items-center justify-center font-black text-white text-2xl active:scale-95 transition-all">1</button>
-            <button onclick="spawnBlock(2, event)" class="w-14 h-14 bg-teal-500 border-b-4 border-teal-700 rounded-2xl shadow-lg flex items-center justify-center font-black text-white text-2xl active:scale-95 transition-all">2</button>
-            <button onclick="spawnBlock(3, event)" class="w-14 h-14 bg-green-500 border-b-4 border-green-700 rounded-2xl shadow-lg flex items-center justify-center font-black text-white text-2xl active:scale-95 transition-all">3</button>
-            <button onclick="spawnBlock(4, event)" class="w-14 h-14 bg-orange-500 border-b-4 border-orange-700 rounded-2xl shadow-lg flex items-center justify-center font-black text-white text-2xl active:scale-95 transition-all">4</button>
-            <button onclick="spawnBlock(5, event)" class="w-14 h-14 bg-purple-500 border-b-4 border-purple-700 rounded-2xl shadow-lg flex items-center justify-center font-black text-white text-2xl active:scale-95 transition-all">5</button>
-            <button onclick="spawnBlock(9, event)" class="w-14 h-14 bg-pink-500 border-b-4 border-pink-700 rounded-2xl shadow-lg flex items-center justify-center font-black text-white text-2xl active:scale-95 transition-all">9</button>
+        <div class="flex gap-4 bg-black/40 p-5 rounded-[2.5rem] backdrop-blur-2xl border border-white/10 shadow-2xl overflow-x-auto max-w-[90%]">
+            <button onclick="spawnBlock(1, event)" class="w-14 h-14 min-w-[56px] bg-blue-500 border-b-4 border-blue-700 rounded-2xl shadow-lg flex items-center justify-center font-black text-white text-2xl active:scale-90 transition-all">1</button>
+            <button onclick="spawnBlock(2, event)" class="w-14 h-14 min-w-[56px] bg-teal-500 border-b-4 border-teal-700 rounded-2xl shadow-lg flex items-center justify-center font-black text-white text-2xl active:scale-90 transition-all">2</button>
+            <button onclick="spawnBlock(3, event)" class="w-14 h-14 min-w-[56px] bg-green-500 border-b-4 border-green-700 rounded-2xl shadow-lg flex items-center justify-center font-black text-white text-2xl active:scale-90 transition-all">3</button>
+            <button onclick="spawnBlock(4, event)" class="w-14 h-14 min-w-[56px] bg-orange-500 border-b-4 border-orange-700 rounded-2xl shadow-lg flex items-center justify-center font-black text-white text-2xl active:scale-90 transition-all">4</button>
+            <button onclick="spawnBlock(5, event)" class="w-14 h-14 min-w-[56px] bg-purple-500 border-b-4 border-purple-700 rounded-2xl shadow-lg flex items-center justify-center font-black text-white text-2xl active:scale-90 transition-all">5</button>
+            <button onclick="spawnBlock(9, event)" class="w-14 h-14 min-w-[56px] bg-pink-500 border-b-4 border-pink-700 rounded-2xl shadow-lg flex items-center justify-center font-black text-white text-2xl active:scale-90 transition-all">9</button>
         </div>
     </div>
 
@@ -103,8 +102,11 @@
         function resize() {
             canvas.width = window.innerWidth;
             canvas.height = window.innerHeight;
+            // 重新渲染確保不留殘影
+            animateFrame();
         }
         window.addEventListener('resize', resize);
+        window.addEventListener('orientationchange', () => setTimeout(resize, 300));
         resize();
 
         class Particle {
@@ -169,8 +171,9 @@
         }
 
         function spawnBlock(val, event) {
+            // 點擊按鈕時，木塊出現在按鈕正上方
             const rect = event.target.getBoundingClientRect();
-            const b = new Block(rect.left + rect.width / 2, rect.top - 60, val);
+            const b = new Block(rect.left + rect.width / 2, rect.top - 70, val);
             blocks.push(b);
         }
 
@@ -204,26 +207,38 @@
             }, 250);
         }
 
-        // 截圖
-        screenshotBtn.addEventListener('click', () => {
+        screenshotBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
             const link = document.createElement('a');
-            link.download = `金字塔_${new Date().toLocaleTimeString()}.png`;
+            link.download = `金字塔_${new Date().getTime()}.png`;
             link.href = canvas.toDataURL("image/png");
             link.click();
         });
 
-        // 平板核心修正：優化觸控事件
-        const getPointerPos = (e) => {
+        // --- 強化的觸控邏輯 ---
+        function getPointerPos(e) {
             const rect = canvas.getBoundingClientRect();
+            let clientX, clientY;
+            if (e.touches && e.touches.length > 0) {
+                clientX = e.touches[0].clientX;
+                clientY = e.touches[0].clientY;
+            } else {
+                clientX = e.clientX;
+                clientY = e.clientY;
+            }
             return {
-                x: (e.touches ? e.touches[0].clientX : e.clientX) - rect.left,
-                y: (e.touches ? e.touches[0].clientY : e.clientY) - rect.top
+                x: clientX - rect.left,
+                y: clientY - rect.top
             };
-        };
+        }
 
         const handleDown = (e) => {
-            if (e.type === 'touchstart') e.preventDefault(); // 阻止平板滾動
+            // 如果點到的是按鈕或 UI，不啟動畫布邏輯
+            if (e.target.tagName === 'BUTTON' || e.target.closest('.ui-panel')) return;
+            
+            if (e.cancelable) e.preventDefault(); 
             const pos = getPointerPos(e);
+            
             for (let i = blocks.length - 1; i >= 0; i--) {
                 if (blocks[i].isPointInside(pos.x, pos.y)) {
                     draggingBlock = blocks[i];
@@ -239,32 +254,41 @@
 
         const handleMove = (e) => {
             if (!draggingBlock) return;
-            if (e.type === 'touchmove') e.preventDefault(); // 阻止平板滾動
+            if (e.cancelable) e.preventDefault(); 
             const pos = getPointerPos(e);
             draggingBlock.x = pos.x - offsetX;
             draggingBlock.y = pos.y - offsetY;
         };
 
-        const handleUp = () => {
-            draggingBlock = null;
-            checkLogic();
+        const handleUp = (e) => {
+            if (draggingBlock) {
+                draggingBlock = null;
+                checkLogic();
+            }
         };
 
-        // 同時綁定滑鼠與觸控事件，並確保觸控不被瀏覽器攔截
+        // 事件監聽（平板關鍵）
         canvas.addEventListener('mousedown', handleDown);
         canvas.addEventListener('touchstart', handleDown, { passive: false });
-        window.addEventListener('mousemove', handleMove);
+        
+        window.addEventListener('mousemove', handleMove, { passive: false });
         window.addEventListener('touchmove', handleMove, { passive: false });
+        
         window.addEventListener('mouseup', handleUp);
-        window.addEventListener('touchend', handleUp);
+        window.addEventListener('touchend', handleUp, { passive: false });
+        window.addEventListener('touchcancel', handleUp);
 
-        function animate() {
+        function animateFrame() {
             ctx.clearRect(0, 0, canvas.width, canvas.height);
             const groundY = canvas.height * GROUND_Y_RATIO;
-            ctx.fillStyle = '#1e293b'; ctx.fillRect(0, groundY, canvas.width, canvas.height - groundY);
+            
+            // 地面
+            ctx.fillStyle = '#1e293b'; 
+            ctx.fillRect(0, groundY, canvas.width, canvas.height - groundY);
             ctx.strokeStyle = '#334155'; ctx.lineWidth = 3;
             ctx.beginPath(); ctx.moveTo(0, groundY); ctx.lineTo(canvas.width, groundY); ctx.stroke();
 
+            // 木塊物理
             blocks.forEach(b => {
                 if (b !== draggingBlock && !b.isNew) {
                     let targetY = groundY - b.h/2;
@@ -281,15 +305,22 @@
                 b.draw();
             });
 
+            // 粒子
             for (let i = fireworks.length - 1; i >= 0; i--) {
                 fireworks[i].update(); fireworks[i].draw();
                 if (fireworks[i].alpha <= 0) fireworks.splice(i, 1);
             }
-            requestAnimationFrame(animate);
+            requestAnimationFrame(animateFrame);
         }
 
-        resetBtn.addEventListener('click', () => { blocks = []; fireworks = []; successMessage.classList.add('hidden'); });
-        animate();
+        resetBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            blocks = []; 
+            fireworks = []; 
+            successMessage.classList.add('hidden'); 
+        });
+
+        animateFrame();
     </script>
 </body>
 </html>
