@@ -2,20 +2,29 @@
 <html lang="zh-Hant">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>數字金字塔疊疊樂 - 互動版</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
+        * {
+            -webkit-touch-callout: none; /* 禁用長按選單 */
+            -webkit-user-select: none;   /* 禁用文字選取 */
+            user-select: none;
+        }
         body {
             background: radial-gradient(circle, #0f172a 0%, #020617 100%);
-            touch-action: none;
+            /* 關鍵：禁用瀏覽器所有預設觸控行為（如滾動、縮放） */
+            touch-action: none; 
             overflow: hidden;
             color: white;
-            user-select: none;
+            position: fixed; /* 防止橡皮筋回彈效果 */
+            width: 100%;
+            height: 100%;
         }
         canvas {
             cursor: crosshair;
             display: block;
+            touch-action: none; /* 確保畫布不觸發滾動 */
         }
         .ui-panel {
             background: rgba(255, 255, 255, 0.1);
@@ -33,7 +42,6 @@
                 <h1 class="text-xl font-bold text-white leading-tight">數字金字塔 🧱</h1>
                 <p class="text-xs text-blue-300 font-medium">由下而上構建邏輯</p>
             </div>
-            <!-- 截圖按鈕 -->
             <button id="screenshotBtn" class="p-2 bg-blue-500/20 hover:bg-blue-500/40 border border-blue-400/30 rounded-lg transition-all" title="截圖保存">
                 <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-blue-300"><path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/><circle cx="12" cy="13" r="3"/></svg>
             </button>
@@ -44,7 +52,6 @@
                 <div class="text-[10px] text-blue-400 font-bold uppercase tracking-wider mb-1">規則</div>
                 <div class="text-sm text-gray-200">上方數值 = 下方兩塊之和</div>
             </div>
-            
             <div id="hint-box" class="p-3 bg-yellow-500/10 rounded-xl border border-yellow-400/20">
                 <div class="text-[10px] text-yellow-400 font-bold uppercase tracking-wider mb-1">目標</div>
                 <div id="targetText" class="text-md font-bold text-white">建立一個完整結構的金字塔</div>
@@ -56,22 +63,21 @@
         </button>
     </div>
 
-    <!-- 成功特效提示 -->
+    <!-- 成功提示 -->
     <div id="successMessage" class="hidden absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-20 text-center pointer-events-none">
-        <div class="text-7xl font-black text-yellow-400 drop-shadow-[0_0_30px_rgba(250,204,21,0.6)] animate-bounce">答對了！🎆</div>
-        <div class="text-2xl font-bold text-white mt-4 opacity-90">完美的數學結構</div>
+        <div class="text-7xl font-black text-yellow-400 drop-shadow-[0_0_30px_rgba(250,204,21,0.6)] animate-bounce text-stroke-black">答對了！🎆</div>
     </div>
 
-    <!-- 數字生成按鈕 (底部拉取區) -->
+    <!-- 底部控制按鈕 -->
     <div class="absolute bottom-10 flex flex-col items-center gap-4 z-10 w-full">
         <div class="text-xs font-bold text-blue-300 bg-blue-900/40 px-4 py-1 rounded-full border border-blue-400/20">點擊數字後向上拉動</div>
         <div class="flex gap-4 bg-black/40 p-5 rounded-[2.5rem] backdrop-blur-2xl border border-white/10 shadow-2xl">
-            <button onclick="spawnBlock(1, event)" class="w-14 h-14 bg-blue-500 border-b-4 border-blue-700 rounded-2xl shadow-lg flex items-center justify-center font-black text-white text-2xl hover:-translate-y-2 active:scale-95 transition-all">1</button>
-            <button onclick="spawnBlock(2, event)" class="w-14 h-14 bg-teal-500 border-b-4 border-teal-700 rounded-2xl shadow-lg flex items-center justify-center font-black text-white text-2xl hover:-translate-y-2 active:scale-95 transition-all">2</button>
-            <button onclick="spawnBlock(3, event)" class="w-14 h-14 bg-green-500 border-b-4 border-green-700 rounded-2xl shadow-lg flex items-center justify-center font-black text-white text-2xl hover:-translate-y-2 active:scale-95 transition-all">3</button>
-            <button onclick="spawnBlock(4, event)" class="w-14 h-14 bg-orange-500 border-b-4 border-orange-700 rounded-2xl shadow-lg flex items-center justify-center font-black text-white text-2xl hover:-translate-y-2 active:scale-95 transition-all">4</button>
-            <button onclick="spawnBlock(5, event)" class="w-14 h-14 bg-purple-500 border-b-4 border-purple-700 rounded-2xl shadow-lg flex items-center justify-center font-black text-white text-2xl hover:-translate-y-2 active:scale-95 transition-all">5</button>
-            <button onclick="spawnBlock(9, event)" class="w-14 h-14 bg-pink-500 border-b-4 border-pink-700 rounded-2xl shadow-lg flex items-center justify-center font-black text-white text-2xl hover:-translate-y-2 active:scale-95 transition-all">9</button>
+            <button onclick="spawnBlock(1, event)" class="w-14 h-14 bg-blue-500 border-b-4 border-blue-700 rounded-2xl shadow-lg flex items-center justify-center font-black text-white text-2xl active:scale-95 transition-all">1</button>
+            <button onclick="spawnBlock(2, event)" class="w-14 h-14 bg-teal-500 border-b-4 border-teal-700 rounded-2xl shadow-lg flex items-center justify-center font-black text-white text-2xl active:scale-95 transition-all">2</button>
+            <button onclick="spawnBlock(3, event)" class="w-14 h-14 bg-green-500 border-b-4 border-green-700 rounded-2xl shadow-lg flex items-center justify-center font-black text-white text-2xl active:scale-95 transition-all">3</button>
+            <button onclick="spawnBlock(4, event)" class="w-14 h-14 bg-orange-500 border-b-4 border-orange-700 rounded-2xl shadow-lg flex items-center justify-center font-black text-white text-2xl active:scale-95 transition-all">4</button>
+            <button onclick="spawnBlock(5, event)" class="w-14 h-14 bg-purple-500 border-b-4 border-purple-700 rounded-2xl shadow-lg flex items-center justify-center font-black text-white text-2xl active:scale-95 transition-all">5</button>
+            <button onclick="spawnBlock(9, event)" class="w-14 h-14 bg-pink-500 border-b-4 border-pink-700 rounded-2xl shadow-lg flex items-center justify-center font-black text-white text-2xl active:scale-95 transition-all">9</button>
         </div>
     </div>
 
@@ -92,7 +98,7 @@
 
         const BLOCK_W = 110;
         const BLOCK_H = 55;
-        const GROUND_Y_RATIO = 0.7; // 地面位置
+        const GROUND_Y_RATIO = 0.7;
 
         function resize() {
             canvas.width = window.innerWidth;
@@ -101,7 +107,6 @@
         window.addEventListener('resize', resize);
         resize();
 
-        // 煙火粒子
         class Particle {
             constructor(x, y, color) {
                 this.x = x; this.y = y; this.color = color;
@@ -134,208 +139,156 @@
                 this.x = x; this.y = y; this.value = value;
                 this.w = BLOCK_W; this.h = BLOCK_H;
                 this.isValid = false; 
-                this.isNew = true; // 初始狀態在按鈕上方
-                const colors = { 
-                    1:'#3B82F6', 2:'#14B8A6', 3:'#22C55E', 
-                    4:'#F59E0B', 5:'#A855F7', 9:'#EC4899' 
-                };
+                this.isNew = true; 
+                const colors = { 1:'#3B82F6', 2:'#14B8A6', 3:'#22C55E', 4:'#F59E0B', 5:'#A855F7', 9:'#EC4899' };
                 this.baseColor = colors[value] || '#64748b';
             }
-
             draw() {
                 ctx.save();
                 ctx.translate(this.x, this.y);
-                
-                // 正確結構發光特效
                 if (this.isValid) {
-                    ctx.shadowBlur = 25;
-                    ctx.shadowColor = '#fbbf24';
-                    ctx.strokeStyle = '#fbbf24';
-                    ctx.lineWidth = 5;
+                    ctx.shadowBlur = 25; ctx.shadowColor = '#fbbf24';
+                    ctx.strokeStyle = '#fbbf24'; ctx.lineWidth = 5;
                 } else {
-                    ctx.strokeStyle = 'rgba(255,255,255,0.4)';
-                    ctx.lineWidth = 2;
+                    ctx.strokeStyle = 'rgba(255,255,255,0.4)'; ctx.lineWidth = 2;
                 }
-
-                // 繪製圓角矩形本體
                 ctx.fillStyle = this.baseColor;
                 ctx.beginPath();
                 ctx.roundRect(-this.w/2, -this.h/2, this.w, this.h, 12);
-                ctx.fill();
-                ctx.stroke();
-
-                // 數值文字
+                ctx.fill(); ctx.stroke();
                 ctx.fillStyle = '#FFFFFF';
                 ctx.font = 'bold 30px system-ui, sans-serif';
-                ctx.textAlign = 'center';
-                ctx.textBaseline = 'middle';
+                ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
                 ctx.fillText(this.value, 0, 0);
-
                 ctx.restore();
             }
-
             isPointInside(px, py) {
                 return px >= this.x - this.w/2 && px <= this.x + this.w/2 &&
                        py >= this.y - this.h/2 && py <= this.y + this.h/2;
             }
         }
 
-        // 從底部按鈕位置生成
         function spawnBlock(val, event) {
             const rect = event.target.getBoundingClientRect();
-            const startX = rect.left + rect.width / 2;
-            const startY = rect.top - 60; // 生成在按鈕上方
-            
-            const b = new Block(startX, startY, val);
+            const b = new Block(rect.left + rect.width / 2, rect.top - 60, val);
             blocks.push(b);
         }
 
-        // 檢查加法金字塔邏輯
         function checkLogic() {
             blocks.forEach(b => b.isValid = false);
             let correctCount = 0;
-
             blocks.forEach(top => {
-                // 邏輯：檢查下方是否有兩塊木塊
-                // 左下支撐點判定 (略偏左下)
-                const leftSupport = blocks.find(b => 
-                    b !== top && !b.isNew &&
-                    Math.abs(b.y - (top.y + top.h)) < 15 && 
-                    Math.abs(b.x - (top.x - top.w/2)) < 30
-                );
-                // 右下支撐點判定 (略偏右下)
-                const rightSupport = blocks.find(b => 
-                    b !== top && !b.isNew &&
-                    Math.abs(b.y - (top.y + top.h)) < 15 && 
-                    Math.abs(b.x - (top.x + top.w/2)) < 30
-                );
-
-                if (leftSupport && rightSupport) {
-                    if (leftSupport.value + rightSupport.value === top.value) {
-                        top.isValid = true;
-                        correctCount++;
-                    }
+                const leftSupport = blocks.find(b => b !== top && !b.isNew && Math.abs(b.y - (top.y + top.h)) < 15 && Math.abs(b.x - (top.x - top.w/2)) < 30);
+                const rightSupport = blocks.find(b => b !== top && !b.isNew && Math.abs(b.y - (top.y + top.h)) < 15 && Math.abs(b.x - (top.x + top.w/2)) < 30);
+                if (leftSupport && rightSupport && (leftSupport.value + rightSupport.value === top.value)) {
+                    top.isValid = true;
+                    correctCount++;
                 }
             });
-
-            // 如果有達成正確節點，給予回饋
-            if (correctCount >= 1) {
-                triggerFirework(correctCount >= 3);
-            }
+            if (correctCount >= 1) triggerFirework(correctCount >= 3);
         }
 
         function triggerFirework(isBigWin) {
             if (!successMessage.classList.contains('hidden')) return;
-            
             if (isBigWin) {
                 successMessage.classList.remove('hidden');
                 setTimeout(() => successMessage.classList.add('hidden'), 4000);
             }
-
             let count = 0;
             const burstInterval = setInterval(() => {
                 const x = Math.random() * canvas.width;
                 const y = Math.random() * canvas.height * 0.5;
-                const colors = ['#fbbf24', '#f472b6', '#22d3ee', '#a78bfa', '#4ade80'];
-                const color = colors[Math.floor(Math.random()*colors.length)];
-                
-                for(let i=0; i < (isBigWin ? 80 : 40); i++) {
-                    fireworks.push(new Particle(x, y, color));
-                }
-                count++;
-                if(count > (isBigWin ? 15 : 4)) clearInterval(burstInterval);
+                const color = ['#fbbf24', '#f472b6', '#22d3ee', '#a78bfa', '#4ade80'][Math.floor(Math.random()*5)];
+                for(let i=0; i < (isBigWin ? 80 : 40); i++) fireworks.push(new Particle(x, y, color));
+                if(++count > (isBigWin ? 15 : 4)) clearInterval(burstInterval);
             }, 250);
         }
 
-        // 截圖下載功能
+        // 截圖
         screenshotBtn.addEventListener('click', () => {
             const link = document.createElement('a');
-            link.download = `金字塔挑戰_${new Date().toLocaleTimeString()}.png`;
+            link.download = `金字塔_${new Date().toLocaleTimeString()}.png`;
             link.href = canvas.toDataURL("image/png");
             link.click();
         });
 
-        // 交互邏輯
-        canvas.addEventListener('pointerdown', e => {
+        // 平板核心修正：優化觸控事件
+        const getPointerPos = (e) => {
             const rect = canvas.getBoundingClientRect();
-            const mx = e.clientX - rect.left;
-            const my = e.clientY - rect.top;
-            
+            return {
+                x: (e.touches ? e.touches[0].clientX : e.clientX) - rect.left,
+                y: (e.touches ? e.touches[0].clientY : e.clientY) - rect.top
+            };
+        };
+
+        const handleDown = (e) => {
+            if (e.type === 'touchstart') e.preventDefault(); // 阻止平板滾動
+            const pos = getPointerPos(e);
             for (let i = blocks.length - 1; i >= 0; i--) {
-                if (blocks[i].isPointInside(mx, my)) {
+                if (blocks[i].isPointInside(pos.x, pos.y)) {
                     draggingBlock = blocks[i];
-                    draggingBlock.isNew = false; // 開始拖動後啟動重力與物理
-                    offsetX = mx - draggingBlock.x;
-                    offsetY = my - draggingBlock.y;
-                    // 置頂顯示
+                    draggingBlock.isNew = false;
+                    offsetX = pos.x - draggingBlock.x;
+                    offsetY = pos.y - draggingBlock.y;
                     blocks.splice(i, 1);
                     blocks.push(draggingBlock);
                     break;
                 }
             }
-        });
+        };
 
-        window.addEventListener('pointermove', e => {
+        const handleMove = (e) => {
             if (!draggingBlock) return;
-            const rect = canvas.getBoundingClientRect();
-            draggingBlock.x = e.clientX - rect.left - offsetX;
-            draggingBlock.y = e.clientY - rect.top - offsetY;
-        });
+            if (e.type === 'touchmove') e.preventDefault(); // 阻止平板滾動
+            const pos = getPointerPos(e);
+            draggingBlock.x = pos.x - offsetX;
+            draggingBlock.y = pos.y - offsetY;
+        };
 
-        window.addEventListener('pointerup', () => { 
-            draggingBlock = null; 
+        const handleUp = () => {
+            draggingBlock = null;
             checkLogic();
-        });
+        };
+
+        // 同時綁定滑鼠與觸控事件，並確保觸控不被瀏覽器攔截
+        canvas.addEventListener('mousedown', handleDown);
+        canvas.addEventListener('touchstart', handleDown, { passive: false });
+        window.addEventListener('mousemove', handleMove);
+        window.addEventListener('touchmove', handleMove, { passive: false });
+        window.addEventListener('mouseup', handleUp);
+        window.addEventListener('touchend', handleUp);
 
         function animate() {
             ctx.clearRect(0, 0, canvas.width, canvas.height);
             const groundY = canvas.height * GROUND_Y_RATIO;
-
-            // 地面與背景裝飾
-            ctx.fillStyle = '#1e293b';
-            ctx.fillRect(0, groundY, canvas.width, canvas.height - groundY);
-            ctx.strokeStyle = '#334155';
-            ctx.lineWidth = 3;
+            ctx.fillStyle = '#1e293b'; ctx.fillRect(0, groundY, canvas.width, canvas.height - groundY);
+            ctx.strokeStyle = '#334155'; ctx.lineWidth = 3;
             ctx.beginPath(); ctx.moveTo(0, groundY); ctx.lineTo(canvas.width, groundY); ctx.stroke();
 
-            // 木塊物理類比
             blocks.forEach(b => {
                 if (b !== draggingBlock && !b.isNew) {
                     let targetY = groundY - b.h/2;
-                    // 檢查下方木塊支撐
                     for (let other of blocks) {
                         if (other === b || other.isNew) continue;
-                        // 如果在 X 軸範圍內且在其上方
                         if (Math.abs(b.x - other.x) < b.w * 0.9 && b.y < other.y) {
-                            let potentialY = other.y - b.h;
-                            if (potentialY < targetY && potentialY > b.y - 40) {
-                                targetY = potentialY;
-                            }
+                            let potY = other.y - b.h;
+                            if (potY < targetY && potY > b.y - 40) targetY = potY;
                         }
                     }
-                    // 平滑下落
                     if (b.y < targetY) b.y += 12;
                     if (b.y > targetY) b.y = targetY;
                 }
                 b.draw();
             });
 
-            // 渲染煙火粒子
             for (let i = fireworks.length - 1; i >= 0; i--) {
-                fireworks[i].update();
-                fireworks[i].draw();
+                fireworks[i].update(); fireworks[i].draw();
                 if (fireworks[i].alpha <= 0) fireworks.splice(i, 1);
             }
-
             requestAnimationFrame(animate);
         }
 
-        resetBtn.addEventListener('click', () => { 
-            blocks = []; 
-            fireworks = []; 
-            successMessage.classList.add('hidden');
-        });
-        
+        resetBtn.addEventListener('click', () => { blocks = []; fireworks = []; successMessage.classList.add('hidden'); });
         animate();
     </script>
 </body>
